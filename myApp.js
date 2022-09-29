@@ -1,49 +1,43 @@
-// index.js
-// where your node app starts
-
-// init project
-var express = require('express');
-var app = express();
-
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
-
-// http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
-
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/views/index.html');
-});
+let express = require('express');
+let bodyParser = require('body-parser');
+let app = express();
 
 
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
-});
+app.use('/', (req, res, next) => {
+  let string = req.method + " " + req.path + " - " + req.ip
+  console.log(string);
+  next();
+})
 
-app.get('/api/:date', (req, res) => {
-  if (req.params.date.includes("-") && Date.parse(req.params.date)) {
-    let unixDate = Date.parse(req.params.date)
-    let utc = new Date(unixDate)
-    let utcDate = utc.toUTCString()
-    res.send({'unix': unixDate, 'utc': utcDate})
-  }
-  else if (parseInt(req.params.date)) {
-    let unixDate = parseInt(req.params.date)
-    let utc = new Date(unixDate)
-    let utcDate = utc.toUTCString()
-    res.send({'unix': unixDate, 'utc': utcDate})
+app.get('/', (req, res) => res.sendFile(__dirname + '/views/index.html'));
+app.use('/public', express.static(__dirname + '/public'))
+app.get('/json', (req, res) => {
+  if (process.env['MESSAGE_STYLE'] === 'uppercase') {
+    res.send({"message":"HELLO JSON"});
   } else {
-    res.send({ error : "Invalid Date" })
+    res.send({"message":"Hello json"});
   }
 })
 
-
-
-// listen for requests :)
-var listener = app.listen(process.env.PORT, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
+app.get('/now', (req, res, next) => {
+  req.time = new Date().toString();
+  next();
+}, (req, res) => {
+  res.send({'time': req.time});
 });
+
+app.get('/:word/echo', (req, res) => res.send({"echo":req.params.word}));
+
+// app.route('/name')
+//   .get((req, res) => res.send({'name': req.query.first + ' ' + req.query.last}));
+
+app.use(bodyParser.urlencoded({extended: false}))
+
+app.route('/name')
+  .post((req, res) => {
+    let first1 = req.body.first
+    let last1 = req.body.last
+    res.send({"name": first1 + ' ' + last1})
+  })
+
+ module.exports = app;
